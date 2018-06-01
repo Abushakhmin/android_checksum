@@ -1,48 +1,48 @@
 package ru.securitycode;
 
+import com.google.gson.Gson;
 import net.dongliu.apk.parser.ApkFile;
 import net.dongliu.apk.parser.bean.ApkMeta;
 import org.json.JSONObject;
-import org.json.JSONArray;
-//import org.json.simple.JSONArray;
-import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
 import java.io.*;
 import java.net.URISyntaxException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Locale;
 import java.util.zip.CRC32;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 public class Main {
 
-    public static void main(String[] args) throws IOException, URISyntaxException, ParseException {
+    public static void main(String[] args) throws IOException, ParseException {
 
-//        int n = args.length;
-//
-//        if (n == 4) {
-//
-//            String generate = args[0];
-//            String filepath = args[1];
-//            String package_name = args[2];
-//            String version = args[3];
-//
-//            System.out.println("Режим 1");
-//            firstMode(generate, filepath, package_name, version);
-//
-//        } else if (n == 2) {
-//
-//            String merge = args[0];
-//            String output = args[1];
-//
-//            System.out.println("Режим 2");
-//    formatJSONFile();
-// newJSONElementApk("/home/roman/test_chek/vpncontinent-debug-latest.apk", "/home/roman/test_chek/vpncontinent-debug-latest");
-//        System.out.println(createJSONFile());
-//        } else System.out.printf("Ошибка ввода аргументов");
-        updateJSONFile(
-                newJSONElementApk("/home/roman/test_chek/tls-mobile-gui-release-signed-latest.apk"),
-                formatJSONFile("qqqqqq", "wwwwwww", "1", "FDCDE", "/home/roman/test_chek/test"));
+        int n = args.length;
+
+        if (n == 4) {
+
+            String generate = args[0];
+            String filepath = args[1];
+            String package_name = args[2];
+            String version = args[3];
+
+            System.out.println("Режим 1");
+            firstMode(generate, filepath, package_name, version);
+
+        } else if (n == 2) {
+
+            String merge = args[0];
+            String output = args[1];
+
+            System.out.println("Режим 2");
+            updateJSONFile(newJSONElementApk(merge), output);
+        } else {
+            System.out.println("Ошибка кол-ва аргументов");
+        }
     }
 
     private static void firstMode(String generate, String filepath, String package_name, String version) throws IOException {
@@ -102,44 +102,50 @@ public class Main {
 
     }
 
-    private static JSONObject formatJSONFile(String package_name, String app_name, String version, String checksum, String generate) throws IOException {
+    // Работает, создает новый JSON на основании первого считывания apk //
+//    private static JSONObject firstFormatJSONFile(JSONObject JsonElementApk, String fileName) throws IOException {
+//
+//        JSONObject mainObject = new JSONObject();
+//
+//        JSONObject objectVersion = new JSONObject();
+//        JSONObject objectAppCtl = new JSONObject();
+//
+//        JSONArray jsonArrayAppCtl = new JSONArray();
+//        JSONArray jsonArrayVersions = new JSONArray();
+//
+//        objectVersion.put("ver", JsonElementApk.get("ver"));
+//        objectVersion.put("sum", JsonElementApk.get("sum"));
+//
+//        jsonArrayVersions.put(objectVersion);
+//
+//        objectAppCtl.put("pack_name", JsonElementApk.get("pack_name"));
+//        objectAppCtl.put("app_name", JsonElementApk.get("app_name"));
+//        objectAppCtl.put("versions", jsonArrayVersions);
+//
+//        jsonArrayAppCtl.put(objectAppCtl);
+//
+//        mainObject.put("app_ctl", jsonArrayAppCtl);
+//
+//        try (FileWriter file = new FileWriter(fileName + ".txt")) {
+//            file.write(mainObject.toString());
+//
+//            System.out.println("Successfully Copied JSON Object to File...");
+//        }
+//
+//        return mainObject;
+//    }
 
-        JSONObject mainObject = new JSONObject();
 
-        JSONObject objectVersion = new JSONObject();
-        JSONObject objectAppCtl = new JSONObject();
+    private static void updateJSONFile(JSONObject newJSONElementApk, String path) throws IOException, ParseException {
 
-        JSONArray jsonArrayAppCtl = new JSONArray();
-        JSONArray jsonArrayVersions = new JSONArray();
-
-        objectVersion.put("ver",version);
-        objectVersion.put("sum",checksum);
-
-        jsonArrayVersions.put(objectVersion);
-
-        objectAppCtl.put("pack_name", package_name);
-        objectAppCtl.put("app_name", app_name);
-        objectAppCtl.put("versions", jsonArrayVersions);
-
-        jsonArrayAppCtl.put(objectAppCtl);
-
-        mainObject.put("app_ctl", jsonArrayAppCtl);
-
-        try (FileWriter file = new FileWriter(generate + "_all" + ".txt")) {
-            file.write(mainObject.toString());
-
-            System.out.println("Successfully Copied JSON Object to File...");
-        }
-
-        return mainObject;
-    }
-
-    private static void updateJSONFile(JSONObject newJSONElementApk, JSONObject mainObject) throws IOException, ParseException {
         // читем из нового объекта параметры
         String newPack_name = newJSONElementApk.get("pack_name").toString();
         String newApp_name = newJSONElementApk.get("app_name").toString();
         String newVersions = newJSONElementApk.get("ver").toString();
         String newSum = newJSONElementApk.get("sum").toString();
+
+        Version newVerAndSum = new Version(newVersions, newSum);
+
 
         System.out.println(newPack_name);
         System.out.println(newApp_name);
@@ -148,31 +154,59 @@ public class Main {
 
         // читем из главного объекта параметры
 
-        JSONArray jsonArrayAppCtl = mainObject.getJSONArray("app_ctl");
-        System.out.println(jsonArrayAppCtl);
+        String content_json = readFile(path, UTF_8);
 
-        for (Object aControlled_appsArray : jsonArrayAppCtl) {
-            JSONObject jsonObjectVersion = (JSONObject) aControlled_appsArray;
-            JSONArray releasesArray = (JSONArray) jsonObjectVersion.get("versions"); // массив из releases
+        RootObject ro = new Gson().fromJson(content_json, RootObject.class);
+        System.out.println(ro.toString());
+        ArrayList<AppCtl> oldAppArray = ro.getAppCtl();
+        System.out.println(oldAppArray);
 
-            System.out.println(releasesArray.toString());
+        int countApp = oldAppArray.size();
+        boolean isContainsAppCtl = false;
 
-            for (Object aReleasesArray : releasesArray) {
+        for(int i = 0 ; i < countApp; i++) {
+            AppCtl jsonObjectApp = oldAppArray.get(i);
+            System.out.println("jsonObjectApp " + i + ": " + jsonObjectApp);
 
-                JSONObject jsonObjectSumfile = (JSONObject) aReleasesArray;
-                String sjsonObjectSumfile = jsonObjectSumfile.get("sum").toString();
-                System.out.println(sjsonObjectSumfile);
-                if (newSum.equals(sjsonObjectSumfile)){
-                    System.out.println("Совпадают");
-                } else {
+            if (jsonObjectApp.getPackName().equals(newPack_name)) {
+                ArrayList<Version> oldVerArray = jsonObjectApp.getVersions();
+                int countVer = oldVerArray.size();
 
-                    System.out.println("НЕ Совпадают");
-//                    jsonObjectSumfile.put(jsonObjectSumfile.keySet())
-                    jsonObjectSumfile.put("ver", newVersions);
-                    jsonObjectSumfile.put("sum", newSum);
+                boolean isContainsVer = false;
+
+                for (int j = 0; j < countVer; j++) {
+                    Version jsonObjectVer = oldVerArray.get(j);
+                    String ver = jsonObjectVer.getVer();
+                    String sum = jsonObjectVer.getSum();
+                    System.out.println("jsonObjectVer " + j + ": " + ver);
+                    System.out.println("jsonObjectSum " + j + ": " + sum);
+
+                    if (jsonObjectVer.getVer().equals(newVersions) &&  jsonObjectVer.getSum().equals(newSum)){
+                        isContainsVer = true;
+                    }
                 }
+
+                if (!isContainsVer){
+                    oldVerArray.add(newVerAndSum);
+                }
+
+                isContainsAppCtl = true;
             }
         }
-        System.out.println(mainObject.toString());
+
+        if(!isContainsAppCtl){
+            AppCtl appCtl = new AppCtl(newPack_name,newApp_name, newVerAndSum);
+            oldAppArray.add(appCtl);
+        }
+
+        try (FileWriter file = new FileWriter(path)) {
+            file.write(oldAppArray.toString());
+            System.out.println("Successfully Copied JSON Object to File...");
+        }
+    }
+
+    private static String readFile(String path, Charset encoding) throws IOException {
+        byte[] encoded = Files.readAllBytes(Paths.get(path));
+        return new String(encoded, encoding);
     }
 }

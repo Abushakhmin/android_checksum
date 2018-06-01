@@ -1,0 +1,1 @@
+[{"pack_name":"mmdm.secure.agent","app_name":"Secret MDM","versions":[{"ver":"21732","sum":"C4238299"}]}, {"pack_name":"mdm.secure.agent","app_name":"Secret MDM","versions":[{"ver":"1732","sum":"C4238299"}]}]
