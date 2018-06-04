@@ -46,6 +46,9 @@ public class Main {
                 firstFormatJSONFile(newJSONElementApk(merge), output); // создаем новый
             }
 
+//        } else if (n == 1) {
+//            String merge = args[0];
+//            newJSONElementApk(merge);
         } else {
             System.out.println("Ошибка кол-ва аргументов");
         }
@@ -72,14 +75,27 @@ public class Main {
 
         String checksum;
 
-        InputStream inputStream = new BufferedInputStream(new FileInputStream(filepath));
-        CRC32 crc = new CRC32();
-        int cnt;
-        while ((cnt = inputStream.read()) != -1) {
-            crc.update(cnt);
+        File file = new File(filepath);
 
+        if (file.exists()) {
+
+            InputStream inputStream = new BufferedInputStream(new FileInputStream(filepath));
+            CRC32 crc = new CRC32();
+            int cnt;
+            while ((cnt = inputStream.read()) != -1) {
+                crc.update(cnt);
+
+            }
+            checksum = String.format(Locale.US, "%08X", crc.getValue());
+        } else {
+
+            byte bytes[] = filepath.getBytes();
+
+            CRC32 crc = new CRC32();
+            crc.update(bytes,0,bytes.length);
+
+            checksum = String.format(Locale.US, "%08X", crc.getValue());
         }
-        checksum = String.format(Locale.US, "%08X", crc.getValue());
         return checksum;
     }
 
@@ -103,6 +119,10 @@ public class Main {
         newJSONElementApk.put("app_name", app_name);
         newJSONElementApk.put("ver", version);
         newJSONElementApk.put("sum", checksum);
+
+//        String textAndSum = newJSONElementApk.toString() + "\n" + "\n" + "\n" + checksumBufferedInputStream(newJSONElementApk.toString());
+//        String textAndSum = checksumBufferedInputStream(newJSONElementApk.toString());
+//        System.out.println(textAndSum);
 
         return newJSONElementApk;
     }
@@ -132,8 +152,7 @@ public class Main {
         mainObject.put("app_ctl", jsonArrayAppCtl);
 
         try (FileWriter file = new FileWriter(fileName)) {
-            file.write(mainObject.toString());
-
+            file.write(mainObject.toString() + "\n" + "\n" + "\n" + checksumBufferedInputStream(mainObject.toString()));
             System.out.println("Successfully Copied JSON Object to File...");
         }
     }
@@ -204,7 +223,7 @@ public class Main {
         }
 
         try (FileWriter file = new FileWriter(path)) {
-            file.write(ro.toString());
+            file.write(ro.toString() + "\n" + "\n" + "\n" + checksumBufferedInputStream(ro.toString()));
             System.out.println("Successfully Copied JSON Object to File...");
         }
     }
