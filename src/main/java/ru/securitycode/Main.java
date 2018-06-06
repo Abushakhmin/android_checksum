@@ -60,7 +60,6 @@ public class Main {
 
         String checksum = checksumBufferedInputStream(filepath);
         resultJson.put("checksum", checksum);
-        System.out.println(checksum);
 
         try (FileWriter file = new FileWriter(generate)) {
             file.write(resultJson.toString());
@@ -117,10 +116,6 @@ public class Main {
         newJSONElementApk.put("ver", version);
         newJSONElementApk.put("sum", checksum);
 
-//        String textAndSum = newJSONElementApk.toString() + "\n" + "\n" + "\n" + checksumBufferedInputStream(newJSONElementApk.toString());
-//        String textAndSum = checksumBufferedInputStream(newJSONElementApk.toString());
-//        System.out.println(textAndSum);
-
         return newJSONElementApk;
     }
 
@@ -148,13 +143,9 @@ public class Main {
 
         mainObject.put("app_ctl", jsonArrayAppCtl);
 
-        System.out.println("Обычный вид:");
-        System.out.println(mainObject.toString());
-        System.out.println("Чек_сумма:" + checksumBufferedInputStream(mainObject.toString()));
-
         try (FileWriter file = new FileWriter(fileName)) {
             file.write(mainObject.toString() + "\n" + "\n" + "\n" + checksumBufferedInputStream(mainObject.toString()));
-            System.out.println("Successfully Copied JSON Object to File...");
+            System.out.println("Successfully Copied JSON Object to File: "+ fileName);
         }
     }
 
@@ -167,49 +158,32 @@ public class Main {
         String newVersions = newJSONElementApk.get("ver").toString();
         String newSum = newJSONElementApk.get("sum").toString();
 
+        // обновление
         Version newVerAndSum = new Version(newVersions, newSum);
 
-//        System.out.println(newPack_name);
-//        System.out.println(newApp_name);
-//        System.out.println(newVersions);
-//        System.out.println(newSum);
-
-        // читем из главного объекта параметры
-
         String content_json = readFile(path, UTF_8);
-//        System.out.println("content_jso:" + content_json);
 
         RootObject ro = new Gson().fromJson(content_json, RootObject.class);
-//        System.out.println("ro:" + ro.toString());
-        ArrayList<AppCtl> oldAppArray = ro.getAppCtl();
-//        System.out.println("oldAppArray:" + oldAppArray);
 
-        int countApp = oldAppArray.size();
+        ArrayList<AppCtl> oldAppArray = ro.getAppCtl();
+
         boolean isContainsAppCtl = false;
 
-        for(int i = 0 ; i < countApp; i++) {
-            AppCtl jsonObjectApp = oldAppArray.get(i);
-//            System.out.println("jsonObjectApp " + i + ": " + jsonObjectApp);
+        for (AppCtl jsonObjectApp : oldAppArray) {
 
             if (jsonObjectApp.getPackName().equals(newPack_name)) {
                 ArrayList<Version> oldVerArray = jsonObjectApp.getVersions();
-                int countVer = oldVerArray.size();
 
                 boolean isContainsVer = false;
 
-                for (int j = 0; j < countVer; j++) {
-                    Version jsonObjectVer = oldVerArray.get(j);
-                    String ver = jsonObjectVer.getVer();
-                    String sum = jsonObjectVer.getSum();
-//                    System.out.println("jsonObjectVer " + j + ": " + ver);
-//                    System.out.println("jsonObjectSum " + j + ": " + sum);
+                for (Version jsonObjectVer : oldVerArray) {
 
-                    if (jsonObjectVer.getVer().equals(newVersions) &&  jsonObjectVer.getSum().equals(newSum)){
+                    if (jsonObjectVer.getVer().equals(newVersions) && jsonObjectVer.getSum().equals(newSum)) {
                         isContainsVer = true;
                     }
                 }
 
-                if (!isContainsVer){
+                if (!isContainsVer) {
                     oldVerArray.add(newVerAndSum);
                 }
 
@@ -223,13 +197,9 @@ public class Main {
             ro.setAppCtl(oldAppArray);
         }
 
-        System.out.println("Обычный вид:");
-        System.out.println(ro.toString());
-        System.out.println("Чек_сумма:" + checksumBufferedInputStream(ro.toString()));
-
         try (FileWriter file = new FileWriter(path)) {
             file.write(ro.toString() + "\n" + "\n" + "\n" + checksumBufferedInputStream(ro.toString()));
-            System.out.println("Successfully Copied JSON Object to File...");
+            System.out.println("Successfully Copied JSON Object to File: "+ path);
         }
     }
 
@@ -240,7 +210,6 @@ public class Main {
 
     //Преобразование текстового файла в JSON
     private static void withTxtInJson (String path) throws IOException {
-
         RandomAccessFile f = new RandomAccessFile(path, "rw");
         long length = f.length() - 1;
         byte b;
